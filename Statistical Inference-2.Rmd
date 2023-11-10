@@ -1,0 +1,93 @@
+---
+title: "Statistical Inference Project-2"
+author: "Adekunle Adeniran"
+date: "2023-11-10"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## PART 2 Basic Inferential Data Analysis
+
+Loading the required libraries and take a peek at the dataset
+```{r, echo=TRUE}
+library(stats)
+library(ggplot2)
+library(kableExtra)
+data("ToothGrowth")
+head(ToothGrowth)
+```
+# Summary of Data
+```{r, echo=TRUE}
+summary(ToothGrowth)
+```
+
+
+
+```{r, echo=TRUE}
+ggplot(data=ToothGrowth, aes(x=as.factor(dose), y=len, fill=supp)) +
+    geom_bar(stat="identity",) +
+    facet_grid(. ~ supp) +
+    xlab("Dose in miligrams") +
+    ylab("Tooth length") +
+    guides(fill=guide_legend(title="Supplement type"))
+```
+
+# Using Confidence Intervals to compare tooth growth by supp and dose.
+
+```{r, echo=TRUE}
+unique(ToothGrowth$dose)
+```
+
+There are 3 dose groups: 0.5, 1 and 2
+
+The Graph below shows the relationship between Tooth length and Dose
+
+```{r, echo=TRUE}
+ggplot(aes(x=factor(dose), y=len), data=ToothGrowth) + geom_boxplot(aes(fill= factor(dose))) + ggtitle("Plot of length by dose") + xlab("Dose (mg)") + ylab("Tooth length") + labs(fill = "Dose (mg)")
+```
+*T-test for dose 0.5 mg*:
+
+```{r, echo=TRUE}
+t.test(len ~ supp, ToothGrowth[ToothGrowth$dose == .5, ])
+```
+
+
+*T-test for dose 1 mg*:
+
+```{r, echo=TRUE}
+t.test(len ~ supp, ToothGrowth[ToothGrowth$dose == 1, ])
+```
+
+*T-test for dose 2 mg*:
+```{r, echo=TRUE}
+t.test(len ~ supp, ToothGrowth[ToothGrowth$dose == 2, ])
+```
+
+```{r, echo=TRUE}
+dose <- c(0.5, 1.0, 2.0)
+p_value <- c(0.0064, 0.0010, 0.9639)
+conf.int <-c("1.72, 8.78","2.80, 9.06","-3.80, 3.64")
+decision <- c("Reject null", "Reject null", "Do not reject null")
+
+knitr::kable(data.frame(dose, conf.int, p_value, decision), align = "cccc")
+```
+
+As anticipated, the p-values for doses 0.5 and 1.0 are expected to be very low due to the substantial mean differences between them.
+
+Consequently, for doses 0.5 and 1.0, since the p-values fall below 0.5, we can reject the null hypotheses asserting that there is no difference in tooth growth among the supplement types. However, for dose 2.0 mg/day, the null hypothesis can be retained as the p-value exceeds 0.5.
+
+
+# Conclusion
+
+The fundamental assumption underlying the results is that the sample is a representative depiction of the population, and the variables are independent and identically distributed (IID) random variables.
+
+Regarding the t-test, two key assumptions are taken into account:
+
+1. The data is not paired, indicating independence.
+2. The variances are unequal.
+
+Given these considerations, upon reviewing the t-test results, it is observed that supplement type OC proves to be more effective than VC for doses below 1.0. However, at a dose of 2.0 mg/day, there is no discernible difference between the supplement types.
+
