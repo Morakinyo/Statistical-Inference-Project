@@ -1,0 +1,195 @@
+---
+title: "Statistical Inference Course Project"
+author: "Adekunle Adeniran"
+date: "2023-11-07"
+output: pdf_document
+---
+
+
+                      PART 1 Simulation Exercise
+                            
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, echo=TRUE}
+## Required libraries
+library(ggplot2)
+library(kableExtra)
+```
+
+
+
+
+
+# Overview
+
+To simulate the distribution of the mean of 40 exponentials, I generated 10,000 samples, each consisting of 40 exponential random variables. The sample mean closely approximated the theoretical mean of the exponential distribution, and the variance of the sample means was close to the theoretical variance calculated as the population variance divided by the sample size. Additionally, a histogram of the sample means showed a bell-shaped, approximately normal distribution, in line with the Central Limit Theorem, confirming the tendency toward normality as the sample size increases.
+
+# Sample Exponential Distribution
+
+```{r, echo=TRUE}
+## setting seed for reproducibility
+set.seed(2023)
+lambda <- 0.2 # This is rate parameter
+n <- 40 # number of exponentials
+noSim <- 1:1000 # number of simulations
+```
+
+
+```{r, echo=TRUE}
+meanexpdist <- data.frame(x = sapply(noSim, function(x) {mean(rexp(n, lambda))}))
+head(meanexpdist)
+```
+
+
+
+# Plotting the means
+```{r, echo=TRUE}
+ggplot(data = meanexpdist, aes(x = x)) + 
+  geom_histogram(binwidth=0.2) +   
+  scale_x_continuous(breaks=round(seq(min(meanexpdist$x), max(meanexpdist$x), by=1)))
+```
+
+
+## Comparing Expected and Sample Values of Mean, Standard deviation and Variance
+
+```{r, echo=TRUE}
+simumean <- apply(meanexpdist, 2, mean)
+```
+
+```{r, echo=TRUE}
+emean <- 1/lambda
+```
+
+```{r, echo=TRUE}
+simsd <- sd((meanexpdist$x))
+```
+
+```{r, echo=TRUE}
+esd <- (1/lambda)/sqrt(n)
+```
+
+```{r, echo=TRUE}
+simvar  <-  var(meanexpdist$x)
+```
+
+```{r, echo=TRUE}
+evar = esd^2
+```
+
+
+```{r, echo=TRUE}
+Sample <- c(simumean, simsd, simvar)
+Expected <- c(emean, esd, evar)
+Diff <-
+  c(abs(emean - simumean),
+    abs(esd - simsd),
+    evar - simvar)
+names <- c("Mean", "Std", "Variance")
+data.frame(Sample,
+           Expected,
+           Diff,
+           row.names =  c("Mean", "Std", "Variance"))
+```
+
+# Distribution
+```{r, echo = TRUE}
+plot <- ggplot(data = meanexpdist, aes(x = x)) + 
+    geom_histogram(aes(y=after_stat(density)), binwidth = 0.20, fill="steelblue", col="black")
+plot <- plot + labs(title="Distribution of Random Exponential Values with 1000 simulations", x="Mean of 40 Selections", y="Density")
+plot <- plot + geom_vline(xintercept=simumean,linewidth=1.0, color="black")
+plot <- plot + stat_function(fun=dnorm,args=list(mean=simumean, sd=simsd),color = "green", linewidth=1.0)
+plot <- plot+ geom_vline(xintercept=emean,linewidth=1.0,color="indianred4",linetype = "longdash")
+plot <- plot + stat_function(fun=dnorm,args=list(mean=emean, sd=esd),color = "red", linewidth=1.0)
+plot
+```
+
+# Conclusion
+As depicted in the graph, the distribution of means derived from randomly sampled exponential distributions shows a significant alignment with the normal distribution, particularly in relation to the anticipated values determined by the provided lambda.  
+
+```{r, echo=FALSE}
+cat("  \n... \n")
+```
+                        
+                        
+                        ## PART 2 Basic Inferential Data Analysis
+
+Loading and take a peek at the dataset
+```{r, echo=TRUE}
+library(stats)
+data("ToothGrowth")
+head(ToothGrowth)
+```
+# Summary of Data
+```{r, echo=TRUE}
+summary(ToothGrowth)
+```
+
+```{r, echo=TRUE}
+library(ggplot2)
+ggplot(data=ToothGrowth, aes(x=as.factor(dose), y=len, fill=supp)) +
+    geom_bar(stat="identity",) +
+    facet_grid(. ~ supp) +
+    xlab("Dose in miligrams") +
+    ylab("Tooth length") +
+    guides(fill=guide_legend(title="Supplement type"))
+```
+
+# Using Confidence Intervals to compare tooth growth by supp and dose.
+
+```{r, echo=TRUE}
+unique(ToothGrowth$dose)
+```
+
+There are 3 dose groups: 0.5, 1 and 2
+
+The Graph below shows the relationship between Tooth length and Dose
+
+```{r, echo=TRUE}
+ggplot(aes(x=factor(dose), y=len), data=ToothGrowth) + geom_boxplot(aes(fill= factor(dose))) + ggtitle("Plot of length by dose") + xlab("Dose (mg)") + ylab("Tooth length") + labs(fill = "Dose (mg)")
+```
+*T-test for dose 0.5 mg*:
+
+```{r, echo=TRUE}
+t.test(len ~ supp, ToothGrowth[ToothGrowth$dose == .5, ])
+```
+
+
+*T-test for dose 1 mg*:
+
+```{r, echo=TRUE}
+t.test(len ~ supp, ToothGrowth[ToothGrowth$dose == 1, ])
+```
+
+*T-test for dose 2 mg*:
+```{r, echo=TRUE}
+t.test(len ~ supp, ToothGrowth[ToothGrowth$dose == 2, ])
+```
+
+```{r, echo=TRUE}
+dose <- c(0.5, 1.0, 2.0)
+p_value <- c(0.0064, 0.0010, 0.9639)
+conf.int <-c("1.72, 8.78","2.80, 9.06","-3.80, 3.64")
+decision <- c("Reject null", "Reject null", "Do not reject null")
+
+knitr::kable(data.frame(dose, conf.int, p_value, decision), align = "cccc")
+```
+
+As anticipated, the p-values for doses 0.5 and 1.0 are expected to be very low due to the substantial mean differences between them.
+
+Consequently, for doses 0.5 and 1.0, since the p-values fall below 0.5, we can reject the null hypotheses asserting that there is no difference in tooth growth among the supplement types. However, for dose 2.0 mg/day, the null hypothesis can be retained as the p-value exceeds 0.5.
+
+
+# Conclusion
+
+The fundamental assumption underlying the results is that the sample is a representative depiction of the population, and the variables are independent and identically distributed (IID) random variables.
+
+Regarding the t-test, two key assumptions are taken into account:
+
+1. The data is not paired, indicating independence.
+2. The variances are unequal.
+
+Given these considerations, upon reviewing the t-test results, it is observed that supplement type OC proves to be more effective than VC for doses below 1.0. However, at a dose of 2.0 mg/day, there is no discernible difference between the supplement types.
+
